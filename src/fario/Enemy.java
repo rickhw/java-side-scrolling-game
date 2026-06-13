@@ -7,12 +7,12 @@ import java.awt.geom.Rectangle2D;
 
 /**
  * 敵人：
- *  - GOOMBA 栗寶寶：行走，可踩扁
- *  - KOOPA 烏龜：踩一下縮進殼，再碰殼會踢出去滑行消滅其他敵人
- *  - SPINY 刺龜：不能踩（會受傷），只能用火球或龜殼消滅
+ *  - GRUB 步行蟲：行走，可踩扁
+ *  - BEETLE 甲蟲：踩一下縮進殼，再碰殼會踢出去滑行消滅其他敵人
+ *  - SPIKER 尖刺蟲：不能踩（會受傷），只能用火球或殼消滅
  */
 public class Enemy {
-    public enum Type { GOOMBA, KOOPA, SPINY, BOSS }
+    public enum Type { GRUB, BEETLE, SPIKER, BOSS }
     public enum Mode { WALK, SHELL, SHELL_MOVING, SQUASHED, FLIPPED }
 
     public static final int W = 28;
@@ -36,7 +36,7 @@ public class Enemy {
         this.type = type;
         this.w = type == Type.BOSS ? 60 : W;
         this.h = switch (type) {
-            case KOOPA -> 34;
+            case BEETLE -> 34;
             case BOSS -> 60;
             default -> 26;
         };
@@ -44,7 +44,7 @@ public class Enemy {
         this.x = x;
         this.y = groundY - h;
         this.vx = switch (type) {
-            case SPINY -> -1.0;
+            case SPIKER -> -1.0;
             case BOSS -> -1.6;
             default -> -1.3;
         };
@@ -99,7 +99,7 @@ public class Enemy {
         vx = 0;
     }
 
-    /** 被火球或龜殼擊中：翻面飛出畫面。 */
+    /** 被火球或殼擊中：翻面飛出畫面。 */
     public void flip(int dir) {
         mode = Mode.FLIPPED;
         vx = 1.5 * dir;
@@ -177,9 +177,9 @@ public class Enemy {
 
     private void drawBody(Graphics2D g2, int px, int py) {
         switch (type) {
-            case GOOMBA -> drawGoomba(g2, px, py);
-            case KOOPA -> drawKoopa(g2, px, py);
-            case SPINY -> drawSpiny(g2, px, py);
+            case GRUB -> drawGrub(g2, px, py);
+            case BEETLE -> drawBeetle(g2, px, py);
+            case SPIKER -> drawSpiker(g2, px, py);
             case BOSS -> drawBoss(g2, px, py);
         }
     }
@@ -232,7 +232,7 @@ public class Enemy {
         g2.drawLine(hx + 24, py + 6, hx + 16, py + 9);
     }
 
-    private void drawGoomba(Graphics2D g2, int px, int py) {
+    private void drawGrub(Graphics2D g2, int px, int py) {
         Color body = new Color(160, 90, 40);
         Color feet = new Color(90, 50, 20);
 
@@ -266,7 +266,7 @@ public class Enemy {
         g2.drawLine(px + W - 4, py + 6, px + W - 11, py + 9);
     }
 
-    private void drawKoopa(Graphics2D g2, int px, int py) {
+    private void drawBeetle(Graphics2D g2, int px, int py) {
         Color shell = new Color(60, 160, 50);
         Color shellDark = new Color(35, 110, 30);
         Color skin = new Color(245, 215, 130);
@@ -311,7 +311,7 @@ public class Enemy {
         }
     }
 
-    private void drawSpiny(Graphics2D g2, int px, int py) {
+    private void drawSpiker(Graphics2D g2, int px, int py) {
         Color body = new Color(210, 70, 40);
         Color spike = new Color(250, 240, 220);
         Color feet = new Color(140, 45, 25);

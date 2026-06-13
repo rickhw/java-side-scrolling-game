@@ -4,6 +4,15 @@
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，
 版本號遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [0.3.1] - 2026-06-13
+
+### Changed
+- 為避免商標疑慮，把敵人改成原創名稱（含 `Enemy.Type` enum 與中英文說明）：
+  栗寶寶/Goomba → **步行蟲/Grub**、烏龜/Koopa → **甲蟲/Beetle**、
+  刺龜/Spiny → **尖刺蟲/Spiker**；「龜殼」一律改稱「殼」。行為與外觀不變。
+
+[0.3.1]: https://github.com/rickhw/fario/releases/tag/v0.3.1
+
 ## [0.3.0] - 2026-06-13
 
 ### Added

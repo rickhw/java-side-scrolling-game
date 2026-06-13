@@ -11,7 +11,7 @@ import java.util.Random;
  *   World 2：沙漠（{@link Theme#DESERT}）
  *
  * 一般關卡用固定種子（world, stage）隨機組裝，因此每次產生的地圖都一致；
- * 難度（坑洞寬度、敵人密度、刺龜比例）隨世界與關數提升。
+ * 難度（坑洞寬度、敵人密度、尖刺蟲比例）隨世界與關數提升。
  */
 public final class Stages {
     public static final int WORLDS = 2;
@@ -102,17 +102,17 @@ public final class Stages {
         return col + n * 3 + 2;
     }
 
-    /** 依世界挑敵人：越後面的世界刺龜越多。 */
+    /** 依世界挑敵人：越後面的世界尖刺蟲越多。 */
     private static Enemy.Type pickEnemy(Random rnd, int world) {
         double r = rnd.nextDouble();
         if (world >= 2) {
-            if (r < 0.35) return Enemy.Type.GOOMBA;
-            if (r < 0.65) return Enemy.Type.KOOPA;
-            return Enemy.Type.SPINY;
+            if (r < 0.35) return Enemy.Type.GRUB;
+            if (r < 0.65) return Enemy.Type.BEETLE;
+            return Enemy.Type.SPIKER;
         }
-        if (r < 0.6) return Enemy.Type.GOOMBA;
-        if (r < 0.9) return Enemy.Type.KOOPA;
-        return Enemy.Type.SPINY;
+        if (r < 0.6) return Enemy.Type.GRUB;
+        if (r < 0.9) return Enemy.Type.BEETLE;
+        return Enemy.Type.SPIKER;
     }
 
     // ==================== Boss 關 ====================
