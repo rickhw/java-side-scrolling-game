@@ -4,6 +4,21 @@
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，
 版本號遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [0.3.0] - 2026-06-13
+
+### Added
+- **背景音樂**：新增 `Music`，程式即時合成可無縫循環的 8-bit 配樂（不需音檔），
+  開頭、世界地圖、一般關卡、Boss 戰各有不同曲子；按 **M** 與音效一起靜音。
+- **世界地圖**：新增 `WorldMap`，每個世界一張地圖（草原、沙漠各一張）。
+  玩家先在地圖上於關卡節點間移動（← →），再按 ↑ / Enter 進入關卡；
+  通關後標記完成並解鎖下一關，最後一關（Boss）通關即前往下一個世界。
+
+### Changed
+- 遊戲流程改為「開頭畫面 → 世界地圖 → 進入關卡 → 過關回到地圖」；
+  無敵模式 `N` 在關卡中為直接過關、在地圖上為解鎖全部關卡。
+
+[0.3.0]: https://github.com/rickhw/fario/releases/tag/v0.3.0
+
 ## [0.2.0] - 2026-06-13
 
 ### Changed

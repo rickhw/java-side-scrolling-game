@@ -20,7 +20,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     public static final int HEIGHT = Level.ROWS * Level.TILE; // 512
     private static final double DT = 1.0 / 60.0;
 
-    private enum State { TITLE, PLAYING, DYING, LEVEL_CLEAR, GAME_OVER, WIN, PAUSED }
+    private enum State { TITLE, MAP, PLAYING, DYING, LEVEL_CLEAR, GAME_OVER, WIN, PAUSED }
 
     // 開頭畫面隱藏指令：注音「很好玩」(cp3cl3j06) → 進入遊戲擁有 30 條命
     private static final String CHEAT_CODE = "cp3cl3j06";
@@ -32,6 +32,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     private volatile boolean running;
 
     private Level level;
+    private WorldMap map;
     private final Player player = new Player();
     private final List<Enemy> enemies = new ArrayList<>();
     private final List<Item> items = new ArrayList<>();
@@ -68,22 +69,45 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     private void gotoTitle() {
         cheatActive = false;
         cheatBuffer.setLength(0);
-        newGame();
-        state = State.TITLE;
-    }
-
-    private void startGame() {
-        newGame();
-        lives = cheatActive ? CHEAT_LIVES : 3;
-    }
-
-    private void newGame() {
         world = 1;
         stage = 1;
         score = 0;
         coins = 0;
         lives = 3;
         player.power = 0;
+        // 開頭畫面背後顯示一張關卡當背景
+        level = Stages.build(1, 1);
+        player.reset(level.startCol * Level.TILE, Level.GROUND_ROW * Level.TILE);
+        enemies.clear();
+        items.clear();
+        fireballs.clear();
+        particles.clear();
+        boss = null;
+        camX = 0;
+        state = State.TITLE;
+        Music.play(Music.TITLE);
+    }
+
+    /** 從開頭畫面開始新遊戲（進入第一個世界地圖）。 */
+    private void startGame() {
+        world = 1;
+        stage = 1;
+        score = 0;
+        coins = 0;
+        lives = cheatActive ? CHEAT_LIVES : 3;
+        player.power = 0;
+        enterWorldMap(1);
+    }
+
+    private void enterWorldMap(int w) {
+        world = w;
+        map = new WorldMap(w, Stages.themeOf(w));
+        state = State.MAP;
+        Music.play(Music.MAP);
+    }
+
+    private void enterStage(int s) {
+        stage = s;
         resetLevel(0);
     }
 
@@ -104,6 +128,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         player.invincible = invincibleTime;
         camX = 0;
         state = State.PLAYING;
+        Music.play(level.boss ? Music.BOSS : Music.STAGE);
     }
 
     /** 過關（一般關抵達旗桿或 Boss 關擊敗頭目時呼叫）。 */
@@ -112,17 +137,24 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         score += bonus;
         particles.add(Particle.score(player.x, player.y - 20, "+" + bonus));
         Sound.CLEAR.play();
+        Music.stop();
         stateTimer = 0;
-        boolean lastStage = world == Stages.WORLDS && stage == Stages.STAGES;
-        state = lastStage ? State.WIN : State.LEVEL_CLEAR;
+        state = State.LEVEL_CLEAR;
     }
 
-    private void advanceStage() {
+    /** LEVEL_CLEAR 動畫結束後：回到地圖、前往下一個世界、或全破。 */
+    private void afterStageClear() {
+        map.markCleared(stage);
         if (stage < Stages.STAGES) {
-            stage++;
+            map.unlock(stage + 1);
+            map.cursor = stage + 1;
+            state = State.MAP;
+            Music.play(Music.MAP);
+        } else if (world < Stages.WORLDS) {
+            enterWorldMap(world + 1);
         } else {
-            world++;
-            stage = 1;
+            state = State.WIN;
+            Music.stop();
         }
     }
 
@@ -167,12 +199,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             case DYING -> updateDying();
             case LEVEL_CLEAR -> {
                 stateTimer += DT;
-                if (stateTimer > 2.5) {
-                    advanceStage();
-                    resetLevel(0);
-                }
+                if (stateTimer > 2.5) afterStageClear();
             }
-            case TITLE, PAUSED, GAME_OVER, WIN -> { }
+            case TITLE, MAP, PAUSED, GAME_OVER, WIN -> { }
         }
 
         particles.removeIf(p -> !p.update(DT));
@@ -375,6 +404,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 resetLevel(2.0);
             } else {
                 state = State.GAME_OVER;
+                Music.stop();
             }
         }
     }
@@ -397,6 +427,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         player.vx = 0;
         player.vy = -11;
         Sound.DIE.play();
+        Music.stop();
     }
 
     private void collectCoins() {
@@ -476,6 +507,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        if (state == State.MAP) {
+            map.draw(g2, animTime, lives, score, godMode);
+            return;
+        }
 
         drawBackground(g2);
         // 升起中的道具畫在磚塊後面
@@ -597,8 +633,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 sub = "總分 " + score + " — 按 ENTER 回到開頭畫面";
             }
             case LEVEL_CLEAR -> {
-                title = level.boss ? "BOSS DEFEATED!" : "WORLD " + world + "-" + stage + " CLEAR!";
-                sub = level.boss ? "前往下一個世界…" : "進入下一關…";
+                if (level.boss) {
+                    title = "BOSS DEFEATED!";
+                    sub = world < Stages.WORLDS ? "前往下一個世界…" : "全部通關！";
+                } else {
+                    title = "WORLD " + world + "-" + stage + " CLEAR!";
+                    sub = "回到地圖…";
+                }
             }
             case WIN -> {
                 title = "ALL CLEAR!";
@@ -674,36 +715,39 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        switch (e.getKeyCode()) {
+        int code = e.getKeyCode();
+
+        // M 靜音：SFX 與 BGM 一起
+        if (code == KeyEvent.VK_M) {
+            Sound.muted = !Sound.muted;
+            Music.setMuted(Sound.muted);
+            return;
+        }
+
+        if (state == State.MAP) {
+            handleMapKeys(code);
+            return;
+        }
+
+        switch (code) {
             case KeyEvent.VK_LEFT, KeyEvent.VK_A -> left = true;
             case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> right = true;
             case KeyEvent.VK_SPACE, KeyEvent.VK_UP, KeyEvent.VK_W -> jumpHeld = true;
             case KeyEvent.VK_SHIFT -> run = true;
             case KeyEvent.VK_X, KeyEvent.VK_F -> fireHeld = true;
-            case KeyEvent.VK_M -> Sound.muted = !Sound.muted;
-            case KeyEvent.VK_G -> {
-                godMode = !godMode;
-                particles.add(Particle.score(player.x - 30, player.y - 30,
-                        godMode ? "GOD MODE ON" : "GOD MODE OFF"));
-                if (godMode) Sound.POWERUP.play();
-                else Sound.POWERDOWN.play();
-            }
+            case KeyEvent.VK_G -> toggleGod();
             case KeyEvent.VK_N -> {
-                // 無敵模式專用：跳到下一關（循環）
-                if (godMode && (state == State.PLAYING || state == State.PAUSED)) {
-                    if (stage < Stages.STAGES) {
-                        stage++;
-                    } else {
-                        stage = 1;
-                        world = world % Stages.WORLDS + 1;
-                    }
-                    resetLevel(0);
-                    Sound.CLEAR.play();
-                }
+                // 無敵模式專用：直接過關
+                if (godMode && state == State.PLAYING) clearStage();
             }
             case KeyEvent.VK_P -> {
-                if (state == State.PLAYING) state = State.PAUSED;
-                else if (state == State.PAUSED) state = State.PLAYING;
+                if (state == State.PLAYING) {
+                    state = State.PAUSED;
+                    Music.stop();
+                } else if (state == State.PAUSED) {
+                    state = State.PLAYING;
+                    Music.play(level.boss ? Music.BOSS : Music.STAGE);
+                }
             }
             case KeyEvent.VK_ENTER -> {
                 if (state == State.TITLE) startGame();
@@ -714,6 +758,30 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             }
             default -> { }
         }
+    }
+
+    private void handleMapKeys(int code) {
+        switch (code) {
+            case KeyEvent.VK_LEFT, KeyEvent.VK_A -> map.move(-1);
+            case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> map.move(1);
+            case KeyEvent.VK_UP, KeyEvent.VK_W, KeyEvent.VK_SPACE, KeyEvent.VK_ENTER -> enterStage(map.cursor);
+            case KeyEvent.VK_G -> toggleGod();
+            case KeyEvent.VK_N -> {
+                if (godMode) map.unlockAll();
+            }
+            case KeyEvent.VK_R -> startGame();
+            default -> { }
+        }
+    }
+
+    private void toggleGod() {
+        godMode = !godMode;
+        if (state == State.PLAYING) {
+            particles.add(Particle.score(player.x - 30, player.y - 30,
+                    godMode ? "GOD MODE ON" : "GOD MODE OFF"));
+        }
+        if (godMode) Sound.POWERUP.play();
+        else Sound.POWERDOWN.play();
     }
 
     @Override
