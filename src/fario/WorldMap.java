@@ -1,4 +1,4 @@
-package mario;
+package fario;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -7,7 +7,7 @@ import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 
 /**
- * 以 World 為單位的地圖（類似超級瑪莉的世界地圖）：玩家在節點之間移動，
+ * 以 World 為單位的地圖（類似經典平台遊戲的世界地圖）：玩家在節點之間移動，
  * 走到關卡節點後進入該關。每個 World 一張，外觀由 {@link Theme} 決定。
  *
  * 節點 1..N（N = {@link Stages#STAGES}），最後一個是 Boss 關。

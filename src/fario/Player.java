@@ -1,4 +1,4 @@
-package mario;
+package fario;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -15,7 +15,7 @@ public class Player {
 
     public double x, y, vx, vy;
     public int h = SMALL_H;
-    public int power; // 0=小瑪莉 1=大瑪莉 2=火力瑪莉
+    public int power; // 0=小 Fario 1=大 Fario 2=火力 Fario
     public boolean onGround;
     public int facing = 1;
     public double invincible; // 受傷/重生後的短暫無敵秒數
@@ -151,7 +151,7 @@ public class Player {
         int px = (int) (x - camX);
         int py = (int) y;
 
-        // 火力瑪莉：白帽白衣紅吊帶褲；一般：紅衣藍吊帶褲
+        // 火力 Fario：白帽白衣紅吊帶褲；一般：紅衣藍吊帶褲
         Color primary = power == 2 ? new Color(250, 245, 235) : new Color(220, 50, 40);
         Color overalls = power == 2 ? new Color(220, 50, 40) : new Color(50, 80, 200);
         Color skin = new Color(250, 200, 160);
@@ -162,7 +162,7 @@ public class Player {
         boolean stepFrame = ((int) walkAnim) % 2 == 0 && Math.abs(vx) > 0.3 && onGround;
 
         if (power == 0) {
-            // ---- 小瑪莉 (26x30) ----
+            // ---- 小 Fario (26x30) ----
             g2.setColor(primary);
             g2.fillRect(px + 3, py, 20, 5);
             g2.fillRect(flip ? px : px + 6, py + 4, 20, 3);
@@ -184,7 +184,7 @@ public class Player {
             g2.setColor(brown);
             drawShoes(g2, px, py + 26, stepFrame);
         } else {
-            // ---- 大瑪莉 / 火力瑪莉 (26x44) ----
+            // ---- 大 Fario / 火力 Fario (26x44) ----
             g2.setColor(primary);
             g2.fillRect(px + 3, py, 20, 6);
             g2.fillRect(flip ? px : px + 6, py + 5, 20, 3);

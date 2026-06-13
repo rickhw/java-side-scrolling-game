@@ -1,4 +1,4 @@
-package mario;
+package fario;
 
 import java.util.Random;
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Compile the sources and produce a runnable jar at dist/fario.jar.
 # The version is taken from the VERSION file and embedded in the jar manifest,
-# so the running game can display it (see mario.Main).
+# so the running game can display it (see fario.Main).
 set -e
 cd "$(dirname "$0")"
 
@@ -11,18 +11,18 @@ echo "Building Fario $VERSION ..."
 rm -rf out dist
 mkdir -p out dist
 
-javac -d out src/mario/*.java
+javac -d out src/fario/*.java
 
 # Bundle the app icon as a classpath resource so the window/dock shows it.
-[ -f assets/icon.png ] && cp assets/icon.png out/mario/icon.png
+[ -f assets/icon.png ] && cp assets/icon.png out/fario/icon.png
 
 cat > out/manifest.mf <<EOF
-Main-Class: mario.Main
+Main-Class: fario.Main
 Implementation-Title: Fario
 Implementation-Version: $VERSION
 EOF
 
-jar --create --file dist/fario.jar --manifest out/manifest.mf -C out mario
+jar --create --file dist/fario.jar --manifest out/manifest.mf -C out fario
 
 echo "OK -> dist/fario.jar"
 echo "Run with: java -jar dist/fario.jar"

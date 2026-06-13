@@ -1,4 +1,4 @@
-package mario;
+package fario;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -14,7 +14,7 @@ public class Main {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Fario v" + version() + " - Super Mario (Java Edition)");
+            JFrame frame = new JFrame("Fario v" + version());
             URL icon = Main.class.getResource("icon.png");
             if (icon != null) {
                 try {

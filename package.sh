@@ -54,11 +54,11 @@ jpackage \
   --app-version "$APP_VERSION" \
   --input dist \
   --main-jar fario.jar \
-  --main-class mario.Main \
+  --main-class fario.Main \
   --dest installer \
   --vendor "Rick Hwang" \
   --copyright "Copyright (c) 2026 Rick Hwang" \
-  --description "A Super Mario style side-scrolling platformer written in pure Java" \
+  --description "An 8-bit style side-scrolling platformer written in pure Java" \
   --license-file LICENSE \
   --about-url "https://github.com/rickhw/fario" \
   $EXTRA

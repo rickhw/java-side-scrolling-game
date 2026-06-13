@@ -1,10 +1,10 @@
-package mario;
+package fario;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 
-/** 火力瑪莉發射的火球：沿地面彈跳，撞牆消失，可消滅敵人。 */
+/** 火力 Fario發射的火球：沿地面彈跳，撞牆消失，可消滅敵人。 */
 public class Fireball {
     public static final int S = 12;
 

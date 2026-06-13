@@ -1,4 +1,4 @@
-package mario;
+package fario;
 
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
@@ -479,7 +479,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             }
             case 'B' -> {
                 if (player.power > 0) {
-                    // 大瑪莉撞碎磚塊
+                    // 大 Fario撞碎磚塊
                     level.set(col, row, ' ');
                     particles.add(Particle.debris(cx - 8, cy + 8, -2.5, -7));
                     particles.add(Particle.debris(cx + 8, cy + 8, 2.5, -7));
@@ -682,7 +682,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
         g2.setColor(Color.WHITE);
         g2.setFont(new Font("SansSerif", Font.PLAIN, 22));
-        drawCentered(g2, "Super Mario — Java Edition", 232);
+        drawCentered(g2, "8-bit 橫向捲軸冒險", 232);
         g2.setColor(new Color(200, 220, 255));
         g2.setFont(new Font("Monospaced", Font.PLAIN, 16));
         drawCentered(g2, "v" + Main.version() + "   " + Stages.WORLDS + " 個世界 × " + Stages.STAGES + " 關（含 Boss）", 258);

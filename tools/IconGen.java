@@ -22,7 +22,7 @@ import java.nio.file.Path;
  * Run from the project root:  javac -d build-tools tools/IconGen.java && java -cp build-tools IconGen
  */
 public class IconGen {
-    // Palette matches mario.Player so the icon looks like the game.
+    // Palette matches fario.Player so the icon looks like the game.
     static final Color RED = new Color(220, 50, 40);
     static final Color BLUE = new Color(50, 80, 200);
     static final Color SKIN = new Color(250, 200, 160);
@@ -63,7 +63,7 @@ public class IconGen {
         rect(g, s, new Color(95, 175, 65), 0, 206, 256, 14);
         rect(g, s, new Color(60, 135, 45), 0, 206, 256, 4);
 
-        // Hero (mario.Player big-sprite coordinates scaled up).
+        // Hero (fario.Player big-sprite coordinates scaled up).
         drawHero(g, s);
 
         // Soft inner border.

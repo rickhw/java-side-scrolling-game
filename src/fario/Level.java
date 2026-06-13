@@ -1,4 +1,4 @@
-package mario;
+package fario;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
