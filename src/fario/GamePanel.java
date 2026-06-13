@@ -282,7 +282,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         }
         fireballs.removeIf(f -> f.remove);
 
-        // 滑行龜殼 vs 其他敵人
+        // 滑行殼 vs 其他敵人
         for (Enemy shell : enemies) {
             if (shell.mode != Enemy.Mode.SHELL_MOVING) continue;
             for (Enemy e : enemies) {
@@ -321,9 +321,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             if (stomp) {
                 switch (e.mode) {
                     case WALK -> {
-                        if (e.type == Enemy.Type.SPINY) {
-                            hurtPlayer(); // 刺龜不能踩
-                        } else if (e.type == Enemy.Type.KOOPA) {
+                        if (e.type == Enemy.Type.SPIKER) {
+                            hurtPlayer(); // 尖刺蟲不能踩
+                        } else if (e.type == Enemy.Type.BEETLE) {
                             e.toShell();
                             player.vy = -8;
                             Sound.STOMP.play();
