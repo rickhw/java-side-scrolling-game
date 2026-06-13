@@ -19,7 +19,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     public static final int WIDTH = 960;
     public static final int HEIGHT = Level.ROWS * Level.TILE; // 512
     private static final double DT = 1.0 / 60.0;
-    private static final int WORLDS = 3;
 
     private enum State { TITLE, PLAYING, DYING, LEVEL_CLEAR, GAME_OVER, WIN, PAUSED }
 
@@ -38,6 +37,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     private final List<Item> items = new ArrayList<>();
     private final List<Fireball> fireballs = new ArrayList<>();
     private final List<Particle> particles = new ArrayList<>();
+    private Enemy boss; // Boss 關的頭目（沒有則為 null）
 
     private State state = State.PLAYING;
     private double stateTimer;
@@ -47,7 +47,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     private double fireCooldown;
     private boolean godMode; // 無敵模式：不會受傷、按住跳躍鍵飛行、N 鍵跳關、時間暫停
 
-    private int world = 1;
+    private int world = 1, stage = 1;
     private int score, coins, lives;
     private double timeLeft;
     private double camX;
@@ -57,6 +57,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         setFocusable(true);
         addKeyListener(this);
         gotoTitle(); // 啟動先停在開頭畫面
+    }
+
+    public void start() {
+        running = true;
+        thread = new Thread(this, "game-loop");
+        thread.start();
     }
 
     private void gotoTitle() {
@@ -71,14 +77,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         lives = cheatActive ? CHEAT_LIVES : 3;
     }
 
-    public void start() {
-        running = true;
-        thread = new Thread(this, "game-loop");
-        thread.start();
-    }
-
     private void newGame() {
         world = 1;
+        stage = 1;
         score = 0;
         coins = 0;
         lives = 3;
@@ -87,19 +88,50 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     }
 
     private void resetLevel(double invincibleTime) {
-        level = new Level(world);
-        timeLeft = 300;
+        level = Stages.build(world, stage);
+        timeLeft = level.boss ? 200 : 300;
         enemies.clear();
         items.clear();
         fireballs.clear();
         particles.clear();
+        boss = null;
         for (Level.Spawn s : level.enemySpawns) {
-            enemies.add(new Enemy(s.type(), s.col() * Level.TILE + 2, 14 * Level.TILE));
+            Enemy e = new Enemy(s.type(), s.col() * Level.TILE + 2, Level.GROUND_ROW * Level.TILE);
+            enemies.add(e);
+            if (e.isBoss()) boss = e;
         }
-        player.reset(level.startCol * Level.TILE, 14 * Level.TILE);
+        player.reset(level.startCol * Level.TILE, Level.GROUND_ROW * Level.TILE);
         player.invincible = invincibleTime;
         camX = 0;
         state = State.PLAYING;
+    }
+
+    /** 過關（一般關抵達旗桿或 Boss 關擊敗頭目時呼叫）。 */
+    private void clearStage() {
+        int bonus = (int) timeLeft * 10;
+        score += bonus;
+        particles.add(Particle.score(player.x, player.y - 20, "+" + bonus));
+        Sound.CLEAR.play();
+        stateTimer = 0;
+        boolean lastStage = world == Stages.WORLDS && stage == Stages.STAGES;
+        state = lastStage ? State.WIN : State.LEVEL_CLEAR;
+    }
+
+    private void advanceStage() {
+        if (stage < Stages.STAGES) {
+            stage++;
+        } else {
+            world++;
+            stage = 1;
+        }
+    }
+
+    private void bossDown() {
+        double bx = boss != null ? boss.x : player.x;
+        double by = boss != null ? boss.y : player.y;
+        addScore(3000, bx, by);
+        particles.add(Particle.score(player.x, player.y - 40, "BOSS DOWN!"));
+        clearStage();
     }
 
     @Override
@@ -136,7 +168,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             case LEVEL_CLEAR -> {
                 stateTimer += DT;
                 if (stateTimer > 2.5) {
-                    world++;
+                    advanceStage();
                     resetLevel(0);
                 }
             }
@@ -204,13 +236,19 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             if (f.remove) continue;
             for (Enemy e : enemies) {
                 if (!e.active || e.harmless() || e.remove) continue;
-                if (f.bounds().intersects(e.bounds())) {
+                if (!f.bounds().intersects(e.bounds())) continue;
+                if (e.isBoss()) {
+                    boolean dead = e.hurtBoss(f.vx > 0 ? 1 : -1);
+                    Sound.KICK.play();
+                    addScore(200, e.x, e.y);
+                    if (dead) bossDown();
+                } else {
                     e.flip(f.vx > 0 ? 1 : -1);
                     addScore(200, e.x, e.y);
                     Sound.KICK.play();
-                    f.remove = true;
-                    break;
                 }
+                f.remove = true;
+                break;
             }
         }
         fireballs.removeIf(f -> f.remove);
@@ -219,7 +257,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         for (Enemy shell : enemies) {
             if (shell.mode != Enemy.Mode.SHELL_MOVING) continue;
             for (Enemy e : enemies) {
-                if (e == shell || !e.active || e.harmless() || e.mode == Enemy.Mode.SHELL_MOVING) continue;
+                if (e == shell || !e.active || e.harmless() || e.mode == Enemy.Mode.SHELL_MOVING || e.isBoss()) continue;
                 if (shell.bounds().intersects(e.bounds())) {
                     e.flip(shell.vx > 0 ? 1 : -1);
                     addScore(200, e.x, e.y);
@@ -235,7 +273,22 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             if (!e.active || e.harmless()) continue;
             if (!pb.intersects(e.bounds())) continue;
             boolean stomp = player.vy > 0 && (player.y + player.h) - e.y < 16;
-            int dir = player.x + Player.W / 2.0 < e.x + Enemy.W / 2.0 ? 1 : -1;
+            int dir = player.x + Player.W / 2.0 < e.x + e.w / 2.0 ? 1 : -1;
+
+            if (e.isBoss()) {
+                if (stomp) {
+                    boolean dead = e.hurtBoss(dir);
+                    player.vy = -9;
+                    Sound.STOMP.play();
+                    addScore(300, e.x, e.y);
+                    if (dead) bossDown();
+                } else {
+                    hurtPlayer();
+                }
+                if (state != State.PLAYING) return;
+                continue;
+            }
+
             if (stomp) {
                 switch (e.mode) {
                     case WALK -> {
@@ -245,12 +298,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                             e.toShell();
                             player.vy = -8;
                             Sound.STOMP.play();
-                            addScore(100, e.x + Enemy.W / 2.0, e.y);
+                            addScore(100, e.x + e.w / 2.0, e.y);
                         } else {
                             e.squash();
                             player.vy = -8;
                             Sound.STOMP.play();
-                            addScore(100, e.x + Enemy.W / 2.0, e.y);
+                            addScore(100, e.x + e.w / 2.0, e.y);
                         }
                     }
                     case SHELL -> {
@@ -302,14 +355,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             }
         }
 
-        // 抵達旗桿 → 過關
-        if (player.x + Player.W / 2.0 >= level.flagCol * Level.TILE + Level.TILE / 2.0) {
-            int bonus = (int) timeLeft * 10;
-            score += bonus;
-            particles.add(Particle.score(player.x, player.y - 20, "+" + bonus));
-            Sound.CLEAR.play();
-            stateTimer = 0;
-            state = world < WORLDS ? State.LEVEL_CLEAR : State.WIN;
+        // 抵達旗桿 → 過關（Boss 關沒有旗桿，靠擊敗頭目過關）
+        if (!level.boss && player.x + Player.W / 2.0 >= level.flagCol * Level.TILE + Level.TILE / 2.0) {
+            clearStage();
         }
 
         // 攝影機跟隨
@@ -452,7 +500,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
         if (level.underground) return; // 地下關只用深色背景
 
-        // 遠景山丘（視差 0.4）
+        // 遠景山丘 / 沙丘（視差 0.4）
         g2.setColor(level.hill);
         for (int i = 0; i < level.pixelWidth() / 500 + 2; i++) {
             int hx = (int) (i * 500 - camX * 0.4);
@@ -471,16 +519,33 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             g2.fillOval(cx + 50, cy, 60, 30);
         }
 
-        // 草叢
-        g2.setColor(level.grassDark);
+        // 地面裝飾：草原畫草叢，沙漠畫仙人掌
         for (int i = 0; i < level.cols; i += 17) {
             int bx = (int) (i * Level.TILE - camX);
             if (bx < -150 || bx > WIDTH + 150) continue;
-            int by = 14 * Level.TILE;
-            g2.fillArc(bx, by - 24, 50, 48, 0, 180);
-            g2.fillArc(bx + 30, by - 32, 60, 64, 0, 180);
-            g2.fillArc(bx + 64, by - 22, 46, 44, 0, 180);
+            int by = Level.GROUND_ROW * Level.TILE;
+            if (level.desert) drawCactus(g2, bx, by);
+            else drawBush(g2, bx, by);
         }
+    }
+
+    private void drawBush(Graphics2D g2, int bx, int by) {
+        g2.setColor(level.grassDark);
+        g2.fillArc(bx, by - 24, 50, 48, 0, 180);
+        g2.fillArc(bx + 30, by - 32, 60, 64, 0, 180);
+        g2.fillArc(bx + 64, by - 22, 46, 44, 0, 180);
+    }
+
+    private void drawCactus(Graphics2D g2, int bx, int by) {
+        Color body = new Color(70, 150, 80);
+        g2.setColor(body);
+        g2.fillRoundRect(bx + 20, by - 62, 14, 62, 8, 8);   // 主幹
+        g2.fillRoundRect(bx + 6, by - 40, 12, 26, 6, 6);    // 左臂（直）
+        g2.fillRoundRect(bx + 6, by - 40, 16, 10, 6, 6);    // 左臂（橫）
+        g2.fillRoundRect(bx + 36, by - 50, 12, 32, 6, 6);   // 右臂（直）
+        g2.fillRoundRect(bx + 30, by - 50, 18, 10, 6, 6);   // 右臂（橫）
+        g2.setColor(new Color(50, 120, 60));
+        g2.drawRoundRect(bx + 20, by - 62, 14, 62, 8, 8);
     }
 
     private void drawHud(Graphics2D g2) {
@@ -490,7 +555,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         g2.setColor(Color.WHITE);
         g2.drawString(String.format("SCORE %06d", score), 24, 30);
         g2.drawString(String.format("COINS x%02d", coins), 240, 30);
-        g2.drawString(String.format("WORLD %d/%d", world, WORLDS), 430, 30);
+        g2.drawString(String.format("WORLD %d-%d", world, stage), 430, 30);
         g2.drawString(String.format("LIVES x%d", Math.max(0, lives)), 610, 30);
         g2.drawString(String.format("TIME %3d", (int) Math.ceil(timeLeft)), 790, 30);
         int chipX = 24;
@@ -502,6 +567,19 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         if (godMode) {
             g2.setColor(new Color(255, 230, 80));
             g2.drawString("[GOD] 按住跳躍=飛行  N=跳關", chipX, 58);
+        }
+
+        // Boss 血條
+        if (level.boss && boss != null && !boss.remove && boss.hp > 0) {
+            int n = boss.hp;
+            g2.setColor(new Color(0, 0, 0, 130));
+            g2.fillRoundRect(WIDTH / 2 - 96, 44, 192, 24, 8, 8);
+            g2.setColor(new Color(255, 90, 80));
+            g2.setFont(new Font("Monospaced", Font.BOLD, 16));
+            g2.drawString("BOSS", WIDTH / 2 - 86, 61);
+            for (int i = 0; i < n; i++) {
+                g2.fillRect(WIDTH / 2 - 34 + i * 26, 50, 20, 11);
+            }
         }
     }
 
@@ -519,8 +597,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 sub = "總分 " + score + " — 按 ENTER 回到開頭畫面";
             }
             case LEVEL_CLEAR -> {
-                title = "WORLD " + world + " CLEAR!";
-                sub = "進入下一個世界…";
+                title = level.boss ? "BOSS DEFEATED!" : "WORLD " + world + "-" + stage + " CLEAR!";
+                sub = level.boss ? "前往下一個世界…" : "進入下一關…";
             }
             case WIN -> {
                 title = "ALL CLEAR!";
@@ -566,7 +644,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         drawCentered(g2, "Super Mario — Java Edition", 232);
         g2.setColor(new Color(200, 220, 255));
         g2.setFont(new Font("Monospaced", Font.PLAIN, 16));
-        drawCentered(g2, "v" + Main.version(), 258);
+        drawCentered(g2, "v" + Main.version() + "   " + Stages.WORLDS + " 個世界 × " + Stages.STAGES + " 關（含 Boss）", 258);
 
         // 閃爍的開始提示
         if (((int) (animTime * 2)) % 2 == 0) {
@@ -611,9 +689,14 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 else Sound.POWERDOWN.play();
             }
             case KeyEvent.VK_N -> {
-                // 無敵模式專用：跳到下一個世界（循環）
+                // 無敵模式專用：跳到下一關（循環）
                 if (godMode && (state == State.PLAYING || state == State.PAUSED)) {
-                    world = world % WORLDS + 1;
+                    if (stage < Stages.STAGES) {
+                        stage++;
+                    } else {
+                        stage = 1;
+                        world = world % Stages.WORLDS + 1;
+                    }
                     resetLevel(0);
                     Sound.CLEAR.play();
                 }
