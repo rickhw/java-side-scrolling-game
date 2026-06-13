@@ -13,6 +13,9 @@ mkdir -p out dist
 
 javac -d out src/mario/*.java
 
+# Bundle the app icon as a classpath resource so the window/dock shows it.
+[ -f assets/icon.png ] && cp assets/icon.png out/mario/icon.png
+
 cat > out/manifest.mf <<EOF
 Main-Class: mario.Main
 Implementation-Title: Fario

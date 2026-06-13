@@ -21,7 +21,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     private static final double DT = 1.0 / 60.0;
     private static final int WORLDS = 3;
 
-    private enum State { PLAYING, DYING, LEVEL_CLEAR, GAME_OVER, WIN, PAUSED }
+    private enum State { TITLE, PLAYING, DYING, LEVEL_CLEAR, GAME_OVER, WIN, PAUSED }
+
+    // 開頭畫面隱藏指令：注音「很好玩」(cp3cl3j06) → 進入遊戲擁有 30 條命
+    private static final String CHEAT_CODE = "cp3cl3j06";
+    private static final int CHEAT_LIVES = 30;
+    private final StringBuilder cheatBuffer = new StringBuilder();
+    private boolean cheatActive;
 
     private Thread thread;
     private volatile boolean running;
@@ -50,7 +56,19 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
         addKeyListener(this);
+        gotoTitle(); // 啟動先停在開頭畫面
+    }
+
+    private void gotoTitle() {
+        cheatActive = false;
+        cheatBuffer.setLength(0);
         newGame();
+        state = State.TITLE;
+    }
+
+    private void startGame() {
+        newGame();
+        lives = cheatActive ? CHEAT_LIVES : 3;
     }
 
     public void start() {
@@ -122,7 +140,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                     resetLevel(0);
                 }
             }
-            case PAUSED, GAME_OVER, WIN -> { }
+            case TITLE, PAUSED, GAME_OVER, WIN -> { }
         }
 
         particles.removeIf(p -> !p.update(DT));
@@ -488,12 +506,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     }
 
     private void drawOverlay(Graphics2D g2) {
+        if (state == State.TITLE) {
+            drawTitleScreen(g2);
+            return;
+        }
+
         String title = null;
         String sub = null;
         switch (state) {
             case GAME_OVER -> {
                 title = "GAME OVER";
-                sub = "按 ENTER 重新開始";
+                sub = "總分 " + score + " — 按 ENTER 回到開頭畫面";
             }
             case LEVEL_CLEAR -> {
                 title = "WORLD " + world + " CLEAR!";
@@ -501,7 +524,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             }
             case WIN -> {
                 title = "ALL CLEAR!";
-                sub = "總分 " + score + " — 按 ENTER 再玩一次";
+                sub = "恭喜破關！總分 " + score + " — 按 ENTER 回到開頭畫面";
             }
             case PAUSED -> {
                 title = "PAUSED";
@@ -521,6 +544,52 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         int sw = g2.getFontMetrics().stringWidth(sub);
         g2.drawString(sub, (WIDTH - sw) / 2, HEIGHT / 2 + 28);
         g2.setStroke(new BasicStroke(1));
+    }
+
+    private void drawTitleScreen(Graphics2D g2) {
+        g2.setColor(new Color(0, 0, 0, 160));
+        g2.fillRect(0, 0, WIDTH, HEIGHT);
+
+        // 標題（黃字 + 黑色陰影）
+        String title = "FARIO";
+        g2.setFont(new Font("Monospaced", Font.BOLD, 96));
+        int tw = g2.getFontMetrics().stringWidth(title);
+        int tx = (WIDTH - tw) / 2;
+        int ty = 190;
+        g2.setColor(new Color(0, 0, 0, 180));
+        g2.drawString(title, tx + 5, ty + 5);
+        g2.setColor(new Color(255, 210, 60));
+        g2.drawString(title, tx, ty);
+
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 22));
+        drawCentered(g2, "Super Mario — Java Edition", 232);
+        g2.setColor(new Color(200, 220, 255));
+        g2.setFont(new Font("Monospaced", Font.PLAIN, 16));
+        drawCentered(g2, "v" + Main.version(), 258);
+
+        // 閃爍的開始提示
+        if (((int) (animTime * 2)) % 2 == 0) {
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font("SansSerif", Font.BOLD, 28));
+            drawCentered(g2, "按 ENTER 開始遊戲", 330);
+        }
+
+        g2.setColor(new Color(220, 220, 220, 200));
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        drawCentered(g2, "← → / A D 移動    SPACE 跳躍    SHIFT 奔跑    X 火球    P 暫停    M 靜音", 392);
+
+        if (cheatActive) {
+            g2.setColor(new Color(255, 215, 0));
+            g2.setFont(new Font("Monospaced", Font.BOLD, 22));
+            drawCentered(g2, "★ 隱藏指令啟動：" + CHEAT_LIVES + " 條命 ★", 440);
+        }
+        g2.setStroke(new BasicStroke(1));
+    }
+
+    private void drawCentered(Graphics2D g2, String text, int y) {
+        int w = g2.getFontMetrics().stringWidth(text);
+        g2.drawString(text, (WIDTH - w) / 2, y);
     }
 
     // ---- 鍵盤輸入 ----
@@ -554,9 +623,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 else if (state == State.PAUSED) state = State.PLAYING;
             }
             case KeyEvent.VK_ENTER -> {
-                if (state == State.GAME_OVER || state == State.WIN) newGame();
+                if (state == State.TITLE) startGame();
+                else if (state == State.GAME_OVER || state == State.WIN) gotoTitle();
             }
-            case KeyEvent.VK_R -> newGame();
+            case KeyEvent.VK_R -> {
+                if (state != State.TITLE) startGame();
+            }
             default -> { }
         }
     }
@@ -574,5 +646,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     }
 
     @Override
-    public void keyTyped(KeyEvent e) { }
+    public void keyTyped(KeyEvent e) {
+        if (state != State.TITLE) return;
+        char c = Character.toLowerCase(e.getKeyChar());
+        if (c < 0x20 || c == 0xFFFF) return; // 略過控制鍵
+        cheatBuffer.append(c);
+        if (cheatBuffer.length() > CHEAT_CODE.length()) {
+            cheatBuffer.delete(0, cheatBuffer.length() - CHEAT_CODE.length());
+        }
+        if (!cheatActive && cheatBuffer.toString().equals(CHEAT_CODE)) {
+            cheatActive = true;
+            Sound.ONE_UP.play();
+        }
+    }
 }

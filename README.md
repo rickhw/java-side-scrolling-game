@@ -44,7 +44,7 @@ java -jar dist/fario.jar       # 執行打包好的 jar
 | M | 靜音切換 |
 | G | 無敵模式切換（探索用） |
 | N | 跳到下一個世界（限無敵模式） |
-| Enter | 結束畫面重新開始 |
+| Enter | 開頭畫面開始遊戲 / 結束畫面回到開頭 |
 | R | 隨時重新開始 |
 
 ## 遊戲內容
@@ -92,10 +92,18 @@ src/mario/
 ├── Particle.java   # 視覺效果（金幣彈出、碎片、得分文字）
 └── Sound.java      # 程式合成 8-bit 音效（方波/掃頻/噪音）
 
-build.sh            # 編譯並產生可執行 jar（版本寫入 manifest）
+assets/             # 遊戲圖示（icon.png / icon.ico / icon.icns）
+tools/IconGen.java  # 純 Java 圖示產生器（重繪後執行）
+build.sh            # 編譯並產生可執行 jar（版本寫入 manifest、內嵌圖示）
 package.sh          # 用 jpackage 產生原生安裝檔
 VERSION             # 單一版本來源
 .github/workflows/  # CI 與 Release 自動化
+```
+
+重新產生圖示：
+
+```bash
+javac -d build-tools tools/IconGen.java && java -cp build-tools IconGen
 ```
 
 ## 版本與發佈流程
