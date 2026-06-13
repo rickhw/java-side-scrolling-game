@@ -7,7 +7,7 @@
 
 用純 Java（Swing/AWT）打造的超級瑪莉風格橫向捲軸遊戲，無任何外部相依，連音效都是程式即時合成（不需音檔）。
 
-> 目前版本：**0.1.0**（詳見 [CHANGELOG](CHANGELOG.md)）
+> 最新版本與安裝檔請見 [Releases](https://github.com/rickhw/fario/releases/latest)；變更紀錄見 [CHANGELOG](CHANGELOG.md)。
 
 ## 下載與安裝
 
