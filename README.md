@@ -1,11 +1,11 @@
-# Fario — Super Mario (Java Edition)
+# Fario — 純 Java 橫向捲軸遊戲
 
 [![CI](https://github.com/rickhw/fario/actions/workflows/ci.yml/badge.svg)](https://github.com/rickhw/fario/actions/workflows/ci.yml)
 [![Release](https://github.com/rickhw/fario/actions/workflows/release.yml/badge.svg)](https://github.com/rickhw/fario/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/rickhw/fario?display_name=tag)](https://github.com/rickhw/fario/releases/latest)
 
-用純 Java（Swing/AWT）打造的超級瑪莉風格橫向捲軸遊戲，無任何外部相依，連音效都是程式即時合成（不需音檔）。
+用純 Java（Swing/AWT）打造的經典 8-bit 風格橫向捲軸遊戲，無任何外部相依，連音效都是程式即時合成（不需音檔）。
 
 > 最新版本與安裝檔請見 [Releases](https://github.com/rickhw/fario/releases/latest)；變更紀錄見 [CHANGELOG](CHANGELOG.md)。
 
@@ -39,7 +39,7 @@ java -jar dist/fario.jar       # 執行打包好的 jar
 | ← → 或 A / D | 左右移動 |
 | Space / ↑ / W | 跳躍（按住跳得高，放開跳得低） |
 | Shift | 奔跑（加速） |
-| X / F | 發射火球（需火力瑪莉狀態） |
+| X / F | 發射火球（需火力 Fario狀態） |
 | P | 暫停 / 繼續 |
 | M | 靜音切換（背景音樂與音效一起） |
 | G | 無敵模式切換（探索用） |
@@ -52,10 +52,10 @@ java -jar dist/fario.jar       # 執行打包好的 jar
 ## 遊戲內容
 
 ### 變身系統
-- **蘑菇**：小瑪莉 → 大瑪莉（可撞碎磚塊）
-- **火焰花**：大瑪莉 → 火力瑪莉（白帽紅褲，可發射火球）
-- 道具藏在問號磚中；小瑪莉敲出蘑菇，大瑪莉敲出火焰花
-- 受傷時降回小瑪莉（附 2 秒無敵），小瑪莉受傷才損失生命
+- **蘑菇**：小 Fario → 大 Fario（可撞碎磚塊）
+- **火焰花**：大 Fario → 火力 Fario（白帽紅褲，可發射火球）
+- 道具藏在問號磚中；小 Fario敲出蘑菇，大 Fario敲出火焰花
+- 受傷時降回小 Fario（附 2 秒無敵），小 Fario受傷才損失生命
 
 ### 敵人
 - **栗寶寶（Goomba）**：行走巡邏，踩頭消滅（+100）
@@ -95,7 +95,7 @@ java -jar dist/fario.jar       # 執行打包好的 jar
 ## 專案結構
 
 ```
-src/mario/
+src/fario/
 ├── Main.java       # 程式進入點，建立視窗、顯示版本
 ├── GamePanel.java  # 遊戲主迴圈（60 FPS）、狀態機、世界/關卡進度、碰撞互動、HUD
 ├── Theme.java      # 世界主題（配色 + 裝飾風格）：草原 / 沙漠
