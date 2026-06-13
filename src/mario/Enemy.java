@@ -12,16 +12,20 @@ import java.awt.geom.Rectangle2D;
  *  - SPINY 刺龜：不能踩（會受傷），只能用火球或龜殼消滅
  */
 public class Enemy {
-    public enum Type { GOOMBA, KOOPA, SPINY }
+    public enum Type { GOOMBA, KOOPA, SPINY, BOSS }
     public enum Mode { WALK, SHELL, SHELL_MOVING, SQUASHED, FLIPPED }
 
     public static final int W = 28;
     private static final int SHELL_H = 24;
+    private static final int BOSS_HP = 5;
 
     public final Type type;
     public Mode mode = Mode.WALK;
     public double x, y, vx, vy;
+    public int w;            // 實際寬度（一般敵人 = W，Boss 較大）
     public int h;
+    public int hp = 1;       // Boss 需要多次攻擊才能擊敗
+    public double hitInvuln; // Boss 被擊中後短暫無敵，避免一次扣多滴血
     public boolean active;   // 進入畫面後才開始行動
     public boolean remove;
     public double kickGrace; // 剛踢出的瞬間不會傷到踢的人
@@ -30,18 +34,44 @@ public class Enemy {
 
     public Enemy(Type type, double x, double groundY) {
         this.type = type;
-        this.h = type == Type.KOOPA ? 34 : 26;
+        this.w = type == Type.BOSS ? 60 : W;
+        this.h = switch (type) {
+            case KOOPA -> 34;
+            case BOSS -> 60;
+            default -> 26;
+        };
+        this.hp = type == Type.BOSS ? BOSS_HP : 1;
         this.x = x;
         this.y = groundY - h;
-        this.vx = type == Type.SPINY ? -1.0 : -1.3;
+        this.vx = switch (type) {
+            case SPINY -> -1.0;
+            case BOSS -> -1.6;
+            default -> -1.3;
+        };
+    }
+
+    public boolean isBoss() {
+        return type == Type.BOSS;
     }
 
     public Rectangle2D.Double bounds() {
-        return new Rectangle2D.Double(x, y, W, h);
+        return new Rectangle2D.Double(x, y, w, h);
     }
 
     public boolean harmless() {
         return mode == Mode.SQUASHED || mode == Mode.FLIPPED;
+    }
+
+    /** Boss 被踩或被火球擊中。回傳是否因此被擊敗。 */
+    public boolean hurtBoss(int dir) {
+        if (hitInvuln > 0) return false;
+        hp--;
+        hitInvuln = 0.6;
+        if (hp <= 0) {
+            flip(dir);
+            return true;
+        }
+        return false;
     }
 
     public void squash() {
@@ -78,6 +108,7 @@ public class Enemy {
 
     public void update(Level lv, double dt) {
         if (kickGrace > 0) kickGrace -= dt;
+        if (hitInvuln > 0) hitInvuln -= dt;
         walkAnim += dt * 8;
 
         switch (mode) {
@@ -101,9 +132,9 @@ public class Enemy {
 
         x += vx;
         if (vx > 0) {
-            int col = (int) ((x + W) / t);
+            int col = (int) ((x + w) / t);
             if (lv.solidInColumn(col, y, h)) {
-                x = col * t - W - 0.001;
+                x = col * t - w - 0.001;
                 vx = -vx;
             }
         } else if (vx < 0) {
@@ -119,7 +150,7 @@ public class Enemy {
         y += vy;
         if (vy > 0) {
             int row = (int) ((y + h) / t);
-            if (lv.solidInRow(row, x, W)) {
+            if (lv.solidInRow(row, x, w)) {
                 y = row * t - h - 0.001;
                 vy = 0;
             }
@@ -134,9 +165,9 @@ public class Enemy {
 
         if (mode == Mode.FLIPPED) {
             AffineTransform old = g2.getTransform();
-            g2.translate(px + W / 2.0, py + h / 2.0);
+            g2.translate(px + w / 2.0, py + h / 2.0);
             g2.scale(1, -1);
-            g2.translate(-(px + W / 2.0), -(py + h / 2.0));
+            g2.translate(-(px + w / 2.0), -(py + h / 2.0));
             drawBody(g2, px, py);
             g2.setTransform(old);
             return;
@@ -149,7 +180,56 @@ public class Enemy {
             case GOOMBA -> drawGoomba(g2, px, py);
             case KOOPA -> drawKoopa(g2, px, py);
             case SPINY -> drawSpiny(g2, px, py);
+            case BOSS -> drawBoss(g2, px, py);
         }
+    }
+
+    private void drawBoss(Graphics2D g2, int px, int py) {
+        // 被擊中後閃爍
+        if (hitInvuln > 0 && ((int) (hitInvuln * 12)) % 2 == 0) return;
+
+        boolean step = ((int) walkAnim) % 2 == 0;
+        Color shell = new Color(70, 150, 60);
+        Color shellDark = new Color(40, 100, 35);
+        Color belly = new Color(235, 225, 180);
+        Color skin = new Color(225, 200, 110);
+        Color spike = new Color(245, 240, 225);
+
+        // 腳
+        g2.setColor(skin);
+        g2.fillOval(px + (step ? 2 : 6), py + h - 13, 20, 15);
+        g2.fillOval(px + w - 26 + (step ? -2 : 2), py + h - 13, 20, 15);
+        // 殼 / 身體
+        g2.setColor(shell);
+        g2.fillOval(px + 4, py + 14, w - 8, h - 18);
+        g2.setColor(belly);
+        g2.fillOval(px + 15, py + 24, w - 30, h - 30);
+        g2.setColor(shellDark);
+        g2.drawOval(px + 4, py + 14, w - 9, h - 19);
+        // 殼上尖刺
+        g2.setColor(spike);
+        for (int i = 0; i < 4; i++) {
+            int sx = px + 12 + i * 10;
+            g2.fillPolygon(new int[]{sx, sx + 5, sx + 10}, new int[]{py + 18, py + 8, py + 18}, 3);
+        }
+        // 頭（朝移動方向）
+        int hx = vx < 0 ? px + 2 : px + w - 30;
+        g2.setColor(skin);
+        g2.fillOval(hx, py, 28, 22);
+        // 角
+        g2.setColor(spike);
+        g2.fillPolygon(new int[]{hx + 4, hx + 8, hx + 12}, new int[]{py + 2, py - 8, py + 2}, 3);
+        g2.fillPolygon(new int[]{hx + 16, hx + 20, hx + 24}, new int[]{py + 2, py - 8, py + 2}, 3);
+        // 眼睛 + 怒眉
+        g2.setColor(Color.WHITE);
+        g2.fillOval(hx + 6, py + 8, 7, 8);
+        g2.fillOval(hx + 16, py + 8, 7, 8);
+        g2.setColor(Color.BLACK);
+        g2.fillOval(hx + 8, py + 11, 3, 4);
+        g2.fillOval(hx + 18, py + 11, 3, 4);
+        g2.setColor(new Color(180, 40, 30));
+        g2.drawLine(hx + 5, py + 6, hx + 13, py + 9);
+        g2.drawLine(hx + 24, py + 6, hx + 16, py + 9);
     }
 
     private void drawGoomba(Graphics2D g2, int px, int py) {

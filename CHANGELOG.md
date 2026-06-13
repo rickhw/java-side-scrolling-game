@@ -4,6 +4,24 @@
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，
 版本號遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [0.2.0] - 2026-06-13
+
+### Changed
+- 重構關卡系統以提高重用性：把世界外觀抽成 `Theme`、把地圖建構積木放進通用的
+  `Level`，新增 `Stages` 關卡工廠用可重用區塊（水管／坑洞／磚塊群／樓梯／金幣／
+  敵人群）組裝關卡，並由難度參數驅動。
+- `Enemy` 一般化尺寸與生命值（`w` / `hp` / `hitInvuln`），方便重用與擴充新敵人。
+
+### Added
+- 關卡結構由「3 個世界各 1 關」改為 **2 個世界、每個世界 5 關**：
+  - **World 1：草原**（綠色為主）
+  - **World 2：沙漠**（沙黃配色、仙人掌裝飾）
+- 每個世界的**第 5 關為 Boss 關**：頭目需踩頭或火球擊中 5 次才能擊敗，
+  畫面頂端顯示 Boss 血條。
+- HUD 改以 `WORLD w-s` 顯示世界與關數；無敵模式 `N` 鍵改為逐關前進。
+
+[0.2.0]: https://github.com/rickhw/fario/releases/tag/v0.2.0
+
 ## [0.1.0] - 2026-06-13
 
 首次發佈 🎉
