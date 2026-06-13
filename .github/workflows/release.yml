@@ -1,0 +1,85 @@
+name: Release
+
+# Builds native installers (.dmg / .exe / .deb) and a portable jar, then
+# attaches them to a GitHub Release.
+#
+#   * Push a tag like `v0.1.0`  -> builds and publishes a release for that tag.
+#   * Run manually (workflow_dispatch) -> builds installers as artifacts only.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  package:
+    name: Package (${{ matrix.type }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            type: dmg
+          - os: windows-latest
+            type: exe
+          - os: ubuntu-latest
+            type: deb
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="$(tr -d ' \t\r\n' < VERSION)"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Building version ${VERSION}"
+
+      # jpackage needs the WiX Toolset (v3) on PATH to produce .exe/.msi installers.
+      - name: Install WiX Toolset (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          curl.exe -L -o wix.zip https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip
+          Expand-Archive -Path wix.zip -DestinationPath "$env:RUNNER_TEMP\wix"
+          echo "$env:RUNNER_TEMP\wix" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Build installer
+        run: ./package.sh ${{ matrix.type }} ${{ steps.ver.outputs.version }}
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p release
+          cp installer/*.${{ matrix.type }} release/
+          cp dist/fario.jar "release/fario-${{ steps.ver.outputs.version }}.jar"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fario-${{ matrix.type }}
+          path: release/*
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

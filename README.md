@@ -1,21 +1,36 @@
-# Super Mario - Java Edition
+# Fario — Super Mario (Java Edition)
+
+[![CI](https://github.com/rickhw/fario/actions/workflows/ci.yml/badge.svg)](https://github.com/rickhw/fario/actions/workflows/ci.yml)
+[![Release](https://github.com/rickhw/fario/actions/workflows/release.yml/badge.svg)](https://github.com/rickhw/fario/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/rickhw/fario?display_name=tag)](https://github.com/rickhw/fario/releases/latest)
 
 用純 Java（Swing/AWT）打造的超級瑪莉風格橫向捲軸遊戲，無任何外部相依，連音效都是程式即時合成（不需音檔）。
 
-## 執行方式
+> 目前版本：**0.1.0**（詳見 [CHANGELOG](CHANGELOG.md)）
+
+## 下載與安裝
+
+到 [Releases](https://github.com/rickhw/fario/releases/latest) 下載對應平台的安裝檔，**內建 Java 執行環境，安裝後直接玩、不需另外安裝 Java**：
+
+| 平台 | 檔案 | 安裝方式 |
+|------|------|----------|
+| macOS | `Fario-x.y.z.dmg` | 開啟 dmg，把 Fario 拖到 Applications |
+| Windows | `Fario-x.y.z.exe` | 執行安裝精靈 |
+| Linux (Debian/Ubuntu) | `fario_x.y.z_amd64.deb` | `sudo dpkg -i fario_*.deb` |
+| 任意平台 | `fario-x.y.z.jar` | 需自備 Java 17+，執行 `java -jar fario-*.jar` |
+
+> macOS 的安裝檔未經 Apple 簽章，首次開啟若被 Gatekeeper 阻擋，請在「系統設定 → 隱私權與安全性」按一下「仍要打開」。
+
+## 從原始碼執行
+
+需要 **Java 17 以上**。
 
 ```bash
-./run.sh
+./run.sh                       # 編譯並直接執行
+./build.sh                     # 只編譯並產生 dist/fario.jar
+java -jar dist/fario.jar       # 執行打包好的 jar
 ```
-
-或手動編譯執行：
-
-```bash
-javac -d out src/mario/*.java
-java -cp out mario.Main
-```
-
-需要 Java 17 以上。
 
 ## 操作方式
 
@@ -67,7 +82,7 @@ java -cp out mario.Main
 
 ```
 src/mario/
-├── Main.java       # 程式進入點，建立視窗
+├── Main.java       # 程式進入點，建立視窗、顯示版本
 ├── GamePanel.java  # 遊戲主迴圈（60 FPS）、狀態機、碰撞互動、HUD
 ├── Level.java      # 3 個世界的關卡地圖、主題配色、地形繪製
 ├── Player.java     # 玩家物理、變身（小/大/火力）、繪製
@@ -76,4 +91,42 @@ src/mario/
 ├── Fireball.java   # 火球彈道
 ├── Particle.java   # 視覺效果（金幣彈出、碎片、得分文字）
 └── Sound.java      # 程式合成 8-bit 音效（方波/掃頻/噪音）
+
+build.sh            # 編譯並產生可執行 jar（版本寫入 manifest）
+package.sh          # 用 jpackage 產生原生安裝檔
+VERSION             # 單一版本來源
+.github/workflows/  # CI 與 Release 自動化
 ```
+
+## 版本與發佈流程
+
+- 版本號遵循 [Semantic Versioning](https://semver.org/)，單一來源為 [`VERSION`](VERSION) 檔，並寫入 jar manifest 供遊戲顯示。
+- 推送 `vX.Y.Z` 格式的 tag 會觸發 [Release workflow](.github/workflows/release.yml)，
+  在 macOS / Windows / Linux runner 上各自用 `jpackage` 打包，並把 `.dmg`、`.exe`、`.deb`
+  與 `fario.jar` 自動附加到對應的 GitHub Release。
+
+發佈新版本：
+
+```bash
+# 1. 更新 VERSION 與 CHANGELOG.md
+echo "0.2.0" > VERSION
+# 2. 提交
+git commit -am "Release v0.2.0"
+# 3. 打 tag 並推送（觸發自動發佈）
+git tag v0.2.0
+git push origin main --tags
+```
+
+也可在 Actions 頁面手動執行 Release workflow（`workflow_dispatch`），此時只會產生安裝檔 artifact，不會建立 Release。
+
+本機自行打包（會產生對應目前作業系統的安裝檔）：
+
+```bash
+./package.sh dmg     # macOS
+./package.sh exe     # Windows（需安裝 WiX Toolset）
+./package.sh deb     # Linux
+```
+
+## 授權
+
+本專案採用 [MIT License](LICENSE)。
