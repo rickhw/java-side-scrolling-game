@@ -37,11 +37,15 @@ public enum Music {
 
     static {
         try {
-            // ---- TITLE：明亮的小段開場（A 承 B）----
+            // ---- TITLE：明亮的開場（約 15 秒）----
             int[] tA = {C5, REST, E5, G5, C6, T, G5, REST, A5, REST, F5, A5, G5, T, T, REST};
             int[] tB = {E5, F5, G5, A5, G5, T, E5, REST, C5, T, G5, T, C5, T, T, REST};
+            int[] tC = {G5, A5, G5, E5, C5, T, E5, G5, A5, T, F5, REST, G5, T, T, REST};
+            int[] tD = {C5, E5, G5, C6, A5, T, F5, REST, G5, T, E5, T, C5, T, T, REST};
             int[] tBass = {C3, T, T, REST, G3, T, T, REST, F3, T, T, REST, G3, T, T, REST};
-            TITLE.clip = clip(build(0.15, cat(tA, tB), cat(tBass, tBass)));
+            TITLE.clip = clip(build(0.156,
+                    cat(tA, tB, tC, tA, tD, tB),
+                    cat(tBass, tBass, tBass, tBass, tBass, tBass)));
 
             // ---- MAP：悠閒的世界地圖（D 大調，A B A B）----
             int[] mA = {D4, REST, Fs4, A4, D5, T, A4, REST, B4, REST, G4, B4, A4, T, T, REST};
@@ -51,26 +55,32 @@ public enum Music {
                     cat(mA, mB, mA, mB),
                     cat(mBass, mBass, mBass, mBass)));
 
-            // ---- STAGE：輕快的關卡曲，起承轉合（A B A C B D）----
+            // ---- STAGE：輕快的關卡曲，起承轉合（約 30 秒）----
             int[] sA = {G4, T, E4, G4, A4, T, G4, E4, C5, T, B4, T, G4, T, T, REST};
             int[] sB = {E5, T, C5, D5, E5, T, G5, REST, A5, T, G5, E5, C5, T, T, REST};
             int[] sC = {F5, E5, D5, C5, A4, T, C5, REST, B4, D5, G5, REST, F5, T, E5, REST};
             int[] sD = {G4, A4, B4, C5, D5, T, E5, REST, G4, T, C5, T, C5, T, T, REST};
+            int[] sE = {A4, B4, C5, D5, E5, T, C5, REST, F5, E5, D5, C5, B4, T, T, REST};
+            int[] sF = {G5, T, E5, G5, A5, T, G5, E5, C6, T, A5, REST, G5, T, T, REST};
+            int[] sG = {E5, D5, C5, B4, A4, T, G4, REST, C5, D5, E5, G5, E5, T, T, REST};
             int[] bC = {C3, T, T, REST, F3, T, T, REST, G3, T, T, REST, C3, T, G3, REST};
             int[] bMain = {C3, T, T, REST, A3, T, T, REST, F3, T, T, REST, G3, T, T, REST};
             int[] bBridge = {F3, T, T, REST, G3, T, T, REST, E3, T, T, REST, G3, T, T, REST};
+            int[] bClimax = {C3, T, G3, REST, A3, T, E3, REST, F3, T, C3, REST, G3, T, G3, REST};
             STAGE.clip = clip(build(0.135,
-                    cat(sA, sB, sA, sC, sB, sD),
-                    cat(bC, bMain, bC, bBridge, bMain, bC)));
+                    cat(sA, sB, sA, sC, sB, sD, sE, sB, sF, sG, sC, sB, sD, sA),
+                    cat(bC, bMain, bC, bBridge, bMain, bC, bMain, bMain, bClimax, bBridge, bBridge, bMain, bC, bC)));
 
-            // ---- BOSS：緊張的小調戰鬥曲（A B A C）----
+            // ---- BOSS：緊張的小調戰鬥曲（約 20 秒）----
             int[] xA = {A4, REST, A4, C5, B4, REST, A4, G4, A4, REST, F4, A4, E4, T, T, REST};
             int[] xB = {C5, B4, A4, Gs4, A4, REST, E5, REST, F5, E5, D5, C5, B4, T, T, REST};
             int[] xC = {A4, A4, E5, A4, F5, REST, E5, REST, D5, REST, C5, B4, A4, T, T, REST};
+            int[] xD = {E5, REST, D5, C5, B4, REST, C5, D5, E5, REST, F5, E5, A4, T, T, REST};
+            int[] xE = {A4, C5, E5, A5, G5, REST, E5, REST, F5, E5, D5, C5, B4, T, T, REST};
             int[] xBass = {A2, T, A2, REST, A2, T, A2, REST, F2, T, F2, REST, E2, T, E2, REST};
             BOSS.clip = clip(build(0.115,
-                    cat(xA, xB, xA, xC),
-                    cat(xBass, xBass, xBass, xBass)));
+                    cat(xA, xB, xA, xC, xD, xB, xE, xC, xA, xD, xB),
+                    cat(xBass, xBass, xBass, xBass, xBass, xBass, xBass, xBass, xBass, xBass, xBass)));
         } catch (Throwable t) {
             // 無音訊裝置時靜音執行，遊戲照常運作
         }
