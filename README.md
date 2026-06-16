@@ -7,6 +7,10 @@
 
 用純 Java（Swing/AWT）打造的經典 8-bit 風格橫向捲軸遊戲，無任何外部相依，連音效都是程式即時合成（不需音檔）。
 
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/8_XKvLSqJhI?si=Uzg9tw3JC6NqKDUT" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+
 > 最新版本與安裝檔請見 [Releases](https://github.com/rickhw/fario/releases/latest)；變更紀錄見 [CHANGELOG](CHANGELOG.md)。
 
 ## 下載與安裝
